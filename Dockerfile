@@ -16,7 +16,7 @@ ADD .env .
 
 RUN apk --no-cache --update add alpine-sdk gmp-dev automake libtool inotify-tools autoconf python git
 
-RUN rm -R /opt/app && cd /tmp && git clone -b $BLOCKSCOUT_BRANCH https://github.com/poanetwork/blockscout /opt/app
+RUN source .env && rm -R /opt/app && cd /tmp && git clone -b $BLOCKSCOUT_BRANCH https://github.com/poanetwork/blockscout /opt/app
 
 WORKDIR /opt/app
 
