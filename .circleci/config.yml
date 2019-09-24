@@ -1,6 +1,74 @@
 version: 2
 jobs:
-  validate:
+  docker_build:
+    docker:
+      - image: docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build image
+          command: docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
+      - run:
+          name: Save image
+          command: docker save -o /tmp/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
+      - persist_to_workspace:
+          root: /tmp
+          paths: ${CIRCLE_BRANCH}.tar
+  docker_push:
+    docker:
+      - image: docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Build deps
+          command: |
+            apk add --no-cache py-pip
+            pip install awscli
+      - attach_workspace:
+          at: /tmp/workspace
+      - run:
+          name: Load docker image
+          command: docker load -i /tmp/workspace/
+      - run:
+          name: Login to ECR
+          command: |
+            login="$(aws ecr get-login)"
+            ${login}
+      - run:
+          name: Push docker image to ECR
+          command: docker push "${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}"
+  docker_deploy:
+    docker:
+      - image: docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: 
+          name: Install kubectl
+          command: |
+            wget -O kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+            chmod +x ./kubectl
+            sudo mv ./kubectl /usr/local/bin/kubectl
+      - run: 
+          name: Install aws cli
+          command: |
+            apk add --no-cache py-pip
+            pip install awscli
+        run:
+          name: Fetch Kuber config via aws cli
+          command: aws eks update-kubeconfig --name ${KUBERNETES_CLUSTER}
+      - run:
+          name: Deploy image to K8S
+          command: |
+            sed -i 's/${ECR_ENDPOINT}/bs:latest/${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}/g' kubernetes
+            sed -i 's/env-default/env-${CIRCLE_BRANCH}/g' kubernetes
+            kubectl delete configmap env-${CIRCLE_BRANCH}
+            kubectl create configmap env-${CIRCLE_BRANCH} --from-env-file=.env
+            kubectl apply -f kubernetes
+
+  packer_validate:
     docker:
       - image: hashicorp/packer:latest
     working_directory: ~/packer
@@ -9,7 +77,7 @@ jobs:
       - run:
           name: Validate base
           command: packer validate ./base/base.json
-  build-base:
+  packer_build-base:
     docker:
       - image: hashicorp/packer:latest
     working_directory: ~/packer
@@ -24,24 +92,53 @@ jobs:
       - store_artifacts:
           path: manifest-base.json
 
-workflow_filters: &workflow_filters
+packer_workflow_filters: &packer_workflow_filters
   filters:
     branches:
       only:
         - Packer-AMIBuilder
 
+docker_workflow_filters: &docker_workflow_filters
+          filters:
+            branches:
+              only:
+                - docker-.*
+                
 workflows:
   version: 2
-  build-and-deploy:
+  packer_build-and-deploy:
     jobs:
-      - validate: *workflow_filters
-      - approve: 
-          <<: *workflow_filters
+      - packer_validate: *packer_workflow_filters
+      - packer_approve: 
+          <<: *packer_workflow_filters
           type: approval
           requires:
-            - validate
-      - build-base: 
-          <<: *workflow_filters
+            - packer_validate
+      - packer_build-base: 
+          <<: *packer_workflow_filters
           requires:
-            - approve
-            - validate
+            - packer_approve
+            - packer_validate
+  docker_build-and-deploy:
+    jobs:
+      - docker_build: *docker_workflow_filters
+      - docker_push_approve:
+          <<: *docker_workflow_filters
+          type: approval
+          requires:
+            - docker_build
+      - docker_push: 
+          <<: *docker_workflow_filters
+          requires:
+            - docker_push_approve 
+      - docker_deploy_approve:
+          <<: *docker_workflow_filters
+          type: approval
+          requires:
+            - docker_push
+      - docker_deploy: 
+          <<: *docker_workflow_filters
+          requires:
+            - docker_deploy_approve 
+     
+        
