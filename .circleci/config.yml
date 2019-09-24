@@ -10,7 +10,7 @@ jobs:
           name: Build image
           command: |
             echo SECRET_KEY_BASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c${1:-64};) >> .env
-            docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
+            docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1} .
       - run:
           name: Save image
           command: docker save -o /tmp/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
