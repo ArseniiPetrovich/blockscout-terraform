@@ -43,10 +43,9 @@ jobs:
           command: docker push "${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}"
   docker_deploy:
     docker:
-      - image: docker
+      - image: alpine:latest
     steps:
       - checkout
-      - setup_remote_docker
       - run: 
           name: Install kubectl
           command: |
@@ -58,7 +57,7 @@ jobs:
           command: |
             apk add --no-cache py-pip
             pip install awscli
-        run:
+      - run:
           name: Fetch Kuber config via aws cli
           command: aws eks update-kubeconfig --name ${KUBERNETES_CLUSTER}
       - run:
