@@ -57,7 +57,7 @@ jobs:
           command: |
             apk add --no-cache py-pip
             pip install awscli
-        run:
+      - run:
           name: Fetch Kuber config via aws cli
           command: aws eks update-kubeconfig --name ${KUBERNETES_CLUSTER}
       - run:
