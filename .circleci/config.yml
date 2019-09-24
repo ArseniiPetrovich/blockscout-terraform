@@ -9,8 +9,8 @@ jobs:
       - run:
           name: Build image
           command: |
-            echo SECRET_KEY_BASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c${1:-64};) >> .env
-            docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
+            echo SECRET_KEY_BASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c${1:-64};) >> project/.env
+            docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1} project/Dockerfile
       - run:
           name: Save image
           command: docker save -o /tmp/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
@@ -63,11 +63,11 @@ jobs:
       - run:
           name: Deploy image to K8S
           command: |
-            sed -i 's/${ECR_ENDPOINT}/bs:latest/${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}/g' kubernetes
-            sed -i 's/env-default/env-${CIRCLE_BRANCH}/g' kubernetes
+            sed -i 's/${ECR_ENDPOINT}/bs:latest/${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}/g' project/kubernetes
+            sed -i 's/env-default/env-${CIRCLE_BRANCH}/g' project/kubernetes
             kubectl delete configmap env-${CIRCLE_BRANCH}
-            kubectl create configmap env-${CIRCLE_BRANCH} --from-env-file=.env
-            kubectl apply -f kubernetes
+            kubectl create configmap env-${CIRCLE_BRANCH} --from-env-file=project/.env
+            kubectl apply -f project/kubernetes
 
   packer_validate:
     docker:
@@ -141,5 +141,3 @@ workflows:
           <<: *docker_workflow_filters
           requires:
             - docker_deploy_approve 
-     
-        
