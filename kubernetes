@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bs-callisto-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: bs
+    chain: callisto
+    type: web
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 4000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blockscout-callisto-web
+  labels:
+    app: bs
+    chain: callisto
+    type: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bs
+      chain: callisto
+      type: web
+  template:
+    metadata:
+      labels:
+        app: bs
+        chain: callisto
+        type: web
+    spec:
+      initContainers:
+      - name: db-migrations
+        image: 758011127832.dkr.ecr.us-east-1.amazonaws.com/bs:latest
+        envFrom:
+        - configMapRef:
+            name: env-callisto
+        command: ['sh','-c','mix ecto.create && mix ecto.migrate'] 
+      containers:
+      - name: blockscout-callisto-web
+        resources:
+          requests:
+            memory: "1000Mi"
+            cpu: "1000m"
+        image: 758011127832.dkr.ecr.us-east-1.amazonaws.com/bs:latest
+        env:
+        - name: POOL_SIZE
+          value: "40"
+        - name: DISABLE_READ_API
+          value: "true"
+        - name: PORT
+          value: "4000"
+        envFrom:
+        - configMapRef:
+            name: env-callisto
+        ports:
+        - name: webport
+          containerPort: 4000
