@@ -13,11 +13,12 @@ jobs:
             docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1} .
       - run:
           name: Save image
-          command: docker save -o /tmp/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
+          command: |
+            mkdir -p /tmp/docker/images/
+            docker save -o /tmp/docker/images/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
       - persist_to_workspace:
-          root: /tmp
-          paths: 
-            - ${CIRCLE_BRANCH}.tar
+          root: /tmp/docker/images
+          paths: *
   docker_push:
     docker:
       - image: docker
