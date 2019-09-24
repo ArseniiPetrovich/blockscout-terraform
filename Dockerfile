@@ -12,7 +12,7 @@ ENV HOME=/opt/app/ \
     LC_TIME="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8"
 
-ADD .env /opt/app/.env
+ADD .env /opt/app/
 
 RUN apk --no-cache --update add alpine-sdk gmp-dev automake libtool inotify-tools autoconf python git
 
