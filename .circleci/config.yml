@@ -103,7 +103,7 @@ docker_workflow_filters: &docker_workflow_filters
           filters:
             branches:
               only:
-                - docker-.*
+                - /docker-.*/
                 
 workflows:
   version: 2
