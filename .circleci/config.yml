@@ -48,17 +48,18 @@ jobs:
       - image: alpine:latest
     steps:
       - checkout
+      - run:
+          name: Install deps
+          command: |
+            apk add --no-cache py-pip curl
+            apk upgrade
+            pip install awscli
       - run: 
           name: Install kubectl
           command: |
             curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl 
             chmod +x ./kubectl
             sudo mv ./kubectl /usr/local/bin/kubectl
-      - run: 
-          name: Install aws cli
-          command: |
-            apk add --no-cache py-pip
-            pip install awscli
       - run:
           name: Fetch Kuber config via aws cli
           command: aws eks update-kubeconfig --name ${KUBERNETES_CLUSTER}
