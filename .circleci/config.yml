@@ -17,8 +17,8 @@ jobs:
             mkdir -p /tmp/docker/images/
             docker save -o /tmp/docker/images/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
       - persist_to_workspace:
-          root: /tmp/docker/images
-          paths: *
+          root: /tmp/docker
+          paths: images/*
   docker_push:
     docker:
       - image: docker
@@ -34,7 +34,7 @@ jobs:
           at: /tmp/workspace
       - run:
           name: Load docker image
-          command: docker load -i /tmp/workspace/
+          command: docker load -i /tmp/workspace/images/${CIRCLE_BRANCH}.tar
       - run:
           name: Login to ECR
           command: |
