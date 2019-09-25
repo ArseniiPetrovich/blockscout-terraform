@@ -9,7 +9,8 @@ jobs:
       - run:
           name: Build image
           command: |
-            echo SECRET_KEY_BASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c${1:-64};) >> .env
+            source .env
+            echo SECRET_KEY_BASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c${1:-64};) >> .env.tmp
             docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1} .
       - run:
           name: Save image

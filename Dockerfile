@@ -12,22 +12,22 @@ ENV HOME=/opt/app/ \
     LC_TIME="en_US.UTF-8" \
     LC_ALL="en_US.UTF-8"
 
-ADD .env /tmp/
+ADD .env.tmp /tmp/
 
 RUN apk --no-cache --update add alpine-sdk gmp-dev automake libtool inotify-tools autoconf python git
 
-RUN source /tmp/.env && rm -R /opt/app && cd /tmp && git clone -b $BLOCKSCOUT_BRANCH $BLOCKSCOUT_REPO /opt/app
+RUN source /tmp/.env.tmp && rm -R /opt/app && cd /tmp && git clone -b $BLOCKSCOUT_BRANCH $BLOCKSCOUT_REPO /opt/app
 
 WORKDIR /opt/app
 
-RUN source /tmp/.env && mix do deps.get, deps.compile
+RUN source /tmp/.env.tmp && mix do deps.get, deps.compile
 
 ARG COIN
 RUN if [ "$COIN" != "" ]; then sed -i s/"POA"/"${COIN}"/g apps/block_scout_web/priv/gettext/en/LC_MESSAGES/default.po; fi
 
-RUN source /tmp/.env && mix compile phx.digest
+RUN source /tmp/.env.tmp && mix compile phx.digest
 
-RUN source /tmp/.env && \
+RUN source /tmp/.env.tmp && \
     cd apps/block_scout_web/assets/ && \
     npm install && \
     npm run deploy && \
