@@ -42,7 +42,7 @@ spec:
         image: 758011127832.dkr.ecr.us-east-1.amazonaws.com/bs:latest
         envFrom:
         - configMapRef:
-            name: env-callisto
+            name: env-default
         command: ['sh','-c','mix ecto.create && mix ecto.migrate'] 
       containers:
       - name: blockscout-callisto-web
@@ -60,7 +60,7 @@ spec:
           value: "4000"
         envFrom:
         - configMapRef:
-            name: env-callisto
+            name: env-default
         ports:
         - name: webport
           containerPort: 4000
