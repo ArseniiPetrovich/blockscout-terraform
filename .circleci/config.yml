@@ -67,10 +67,18 @@ jobs:
       - run:
           name: Deploy image to K8S
           command: |
-            sed -i "s/${ECR_ENDPOINT}\/bs:latest/${ECR_ENDPOINT}\/${CIRCLE_BRANCH}:${CIRCLE_SHA1}/g" kubernetes
-            sed -i "s/env-default/env-${CIRCLE_BRANCH}/g" kubernetes
+            source .env 
+            source .env.tmp
+            sed -i "s/\{BRANCH\}/${CIRCLE_BRANCH}/g" kubernetes
+            sed -i "s/\{IMAGE\}/${ECR_ENDPOINT}\/${CIRCLE_BRANCH}:${CIRCLE_SHA1}/g" kubernetes
+            sed -i "s/\{CONFIGMAP\}/env-${CIRCLE_BRANCH}/g" kubernetes
+            export CHAIN="$(echo ${CIRCLE_BRANCH} | cut -d'_' -f2)"
+            export TYPE="$(echo ${CIRCLE_BRANCH} | cut -d'_' -f3)"
+            sed -i "s/\{CHAIN\}/${CHAIN}/g" kubernetes
+            sed -i "s/\{TYPE\}/${TYPE}/g" kubernetes
+            sed -i "s/\{TYPE_MEMORY\}/${RAM}Mi"
+            sed -i "s/\{TYPE_CPU\}/${CPU}m"
             kubectl delete configmap env-${CIRCLE_BRANCH} || true
-            source .env
             kubectl create configmap env-${CIRCLE_BRANCH} --from-env-file=.env.tmp
             kubectl apply -f kubernetes
 
