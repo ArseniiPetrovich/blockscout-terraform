@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: bs-callisto-service-api
+  name: bs-callisto-service-indexer
 spec:
   type: LoadBalancer
   selector:
     app: bs
     chain: callisto
-    type: api
+    type: indexer
   ports:
-    - name: api
+    - name: indexer
       protocol: TCP
       port: 80
       targetPort: 4000
@@ -17,38 +17,38 @@ spec:
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: bs-callisto-api-scaler
+  name: bs-callisto-indexer-scaler
 spec:
   maxReplicas: 3
   minReplicas: 1
   scaleTargetRef:
-    apiVersion: apps/v1
+    indexerVersion: apps/v1
     kind: Deployment
-    name: blockscout-callisto-api
+    name: blockscout-callisto-indexer
   targetCPUUtilizationPercentage: 80
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blockscout-callisto-api
+  name: blockscout-callisto-indexer
   labels:
     app: bs
     chain: callisto
-    type: api
+    type: indexer
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: bs
       chain: callisto
-      type: api
+      type: indexer
   template:
     metadata:
       labels:
         app: bs
         chain: callisto
-        type: api
+        type: indexer
     spec:
       initContainers:
       - name: db-migrations
@@ -58,7 +58,7 @@ spec:
             name: env-callisto
         command: ['sh','-c','mix ecto.create && mix ecto.migrate'] 
       containers:
-      - name: api
+      - name: indexer
         resources:
           requests:
             memory: "1000Mi"
