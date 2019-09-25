@@ -1,41 +1,54 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: bs-callisto-service
+  name: bs-callisto-service-api
 spec:
   type: LoadBalancer
   selector:
     app: bs
     chain: callisto
-    type: web
+    type: api
   ports:
-    - name: web
+    - name: api
       protocol: TCP
       port: 80
       targetPort: 4000
+
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: bs-callisto-api-scaler
+spec:
+  maxReplicas: 3
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: blockscout-callisto-api
+  targetCPUUtilizationPercentage: 80
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blockscout-callisto-web
+  name: blockscout-callisto-api
   labels:
     app: bs
     chain: callisto
-    type: web
+    type: api
 spec:
   replicas: 1
   selector:
     matchLabels:
       app: bs
       chain: callisto
-      type: web
+      type: api
   template:
     metadata:
       labels:
         app: bs
         chain: callisto
-        type: web
+        type: api
     spec:
       initContainers:
       - name: db-migrations
@@ -45,7 +58,7 @@ spec:
             name: env-callisto
         command: ['sh','-c','mix ecto.create && mix ecto.migrate'] 
       containers:
-      - name: blockscout-callisto-web
+      - name: api
         resources:
           requests:
             memory: "1000Mi"
@@ -53,9 +66,7 @@ spec:
         image: 758011127832.dkr.ecr.us-east-1.amazonaws.com/bs:latest
         env:
         - name: POOL_SIZE
-          value: "40"
-        - name: DISABLE_READ_API
-          value: "true"
+          value: "10"
         - name: PORT
           value: "4000"
         envFrom:
