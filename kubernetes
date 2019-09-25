@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: bs-callisto-service-indexer
+  name: {BRANCH}
 spec:
   type: LoadBalancer
   selector:
-    app: bs
-    chain: callisto
-    type: indexer
+    app: BlockScout
+    chain: {CHAIN}
+    type: {TYPE}
   ports:
-    - name: indexer
+    - name: {TYPE}
       protocol: TCP
       port: 80
       targetPort: 4000
@@ -17,61 +17,62 @@ spec:
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  name: bs-callisto-indexer-scaler
+  name: {BRANCH}
 spec:
   maxReplicas: 3
   minReplicas: 1
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: blockscout-callisto-indexer
+    name: {BRANCH}
   targetCPUUtilizationPercentage: 80
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blockscout-callisto-indexer
+  name: {BRANCH}
   labels:
-    app: bs
-    chain: callisto
-    type: indexer
+    app: BlockScout
+    chain: {CHAIN}
+    type: {TYPE}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bs
-      chain: callisto
-      type: indexer
+      app: BlockScout
+      chain: {CHAIN}
+      type: {TYPE}
   template:
     metadata:
       labels:
-        app: bs
-        chain: callisto
-        type: indexer
+        app: BlockScout
+        chain: {CHAIN}
+        type: {TYPE}
     spec:
       initContainers:
       - name: db-migrations
-        image: 758011127832.dkr.ecr.us-east-1.amazonaws.com/bs:latest
+        image: {IMAGE}
         envFrom:
         - configMapRef:
-            name: env-default
+            name: {CONFIGMAP}
         command: ['sh','-c','mix ecto.create && mix ecto.migrate'] 
       containers:
-      - name: indexer
+      - name: {TYPE}
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 4000
+          initialDelaySeconds: 30
+          periodSeconds: 5
         resources:
           requests:
-            memory: "1000Mi"
-            cpu: "1000m"
-        image: 758011127832.dkr.ecr.us-east-1.amazonaws.com/bs:latest
-        env:
-        - name: POOL_SIZE
-          value: "10"
-        - name: PORT
-          value: "4000"
+            memory: "{TYPE_MEMORY}"
+            cpu: "{TYPE_CPU}"
+        image: {IMAGE}
         envFrom:
         - configMapRef:
-            name: env-default
+            name: {CONFIGMAP}
         ports:
         - name: webport
           containerPort: 4000
