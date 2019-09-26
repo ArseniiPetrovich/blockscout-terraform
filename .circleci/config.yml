@@ -10,12 +10,13 @@ jobs:
           name: Build image
           command: |
             source .env
-            echo SECRET_KEY_BASE=$(cat /dev/urandom | tr -dc A-Za-z0-9 | head -c${1:-64};) >> .env.tmp
+            echo SECRET_KEY_BASE=$(head -c 32 /dev/urandom | base64) >> .env.tmp
             docker build -t ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1} .
       - run:
           name: Save image
           command: |
             mkdir -p /tmp/docker/images/
+            cp .env.tmp /tmp/docker/images/
             docker save -o /tmp/docker/images/${CIRCLE_BRANCH}.tar ${ECR_ENDPOINT}/${CIRCLE_BRANCH}:${CIRCLE_SHA1}
       - persist_to_workspace:
           root: /tmp/docker
@@ -49,6 +50,8 @@ jobs:
       - image: alpine:latest
     steps:
       - checkout
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: Install deps
           command: |
@@ -66,9 +69,8 @@ jobs:
           command: aws eks update-kubeconfig --name ${KUBERNETES_CLUSTER}
       - run:
           name: Deploy image to K8S
-          command: |
-            source .env 
-            source .env.tmp
+          command: | 
+            source /tmp/workspace/images/.env.tmp
             sed -i "s/{BRANCH}/${CIRCLE_BRANCH}/g" kubernetes
             sed -i "s/{IMAGE}/${ECR_ENDPOINT}\/${CIRCLE_BRANCH}:${CIRCLE_SHA1}/g" kubernetes
             sed -i "s/{CONFIGMAP}/env-${CIRCLE_BRANCH}/g" kubernetes
