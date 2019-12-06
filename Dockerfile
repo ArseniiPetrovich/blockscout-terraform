@@ -35,21 +35,25 @@ RUN source /tmp/.env.tmp && \
 
 ##### Final Image
 
-FROM bitwalker/alpine-elixir:1.9.0
+FROM bitwalker/alpine-elixir:1.9.1
 
 ENV HOME=/opt/app/ \
     MIX_ENV=prod \
     PORT=4000
 
-COPY --from=phx-builder /opt/app/_build /opt/app/_build
-COPY --from=phx-builder /opt/app/apps /opt/app/apps
-COPY --from=phx-builder /opt/app/.config /opt/app/.config
-COPY --from=phx-builder /opt/app/config /opt/app/config
-COPY --from=phx-builder /opt/app/deps /opt/app/deps
-COPY --from=phx-builder /opt/app/mix.* /opt/app/
+COPY --chown=1001:0 --from=phx-builder /opt/app/_build /opt/app/_build
+COPY --chown=1001:0 --from=phx-builder /opt/app/apps /opt/app/apps
+COPY --chown=1001:0 --from=phx-builder /opt/app/.config /opt/app/.config
+COPY --chown=1001:0 --from=phx-builder /opt/app/config /opt/app/config
+COPY --chown=1001:0 --from=phx-builder /opt/app/deps /opt/app/deps
+COPY --chown=1001:0 --from=phx-builder /opt/app/mix.* /opt/app/
+
+RUN apk --no-cache --update add gmp-dev
 
 WORKDIR ${HOME}
 
 EXPOSE ${PORT}
+
+USER default
 
 CMD ["mix", "phx.server"]
