@@ -53,6 +53,12 @@ spec:
       initContainers:
       - name: db-migrations
         image: {IMAGE}
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              key: DB_HOST
+              name: {CONFIGMAP}
         envFrom:
         - configMapRef:
             name: {CONFIGMAP}
