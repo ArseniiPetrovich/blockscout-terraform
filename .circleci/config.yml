@@ -81,7 +81,7 @@ jobs:
             sed -i "s/{TYPE_MEMORY}/${RAM}Mi/g" kubernetes
             sed -i "s/{TYPE_CPU}/${CPU}m/g" kubernetes
             kubectl delete configmap env-${CIRCLE_BRANCH} || true
-            kubectl create configmap env-${CIRCLE_BRANCH} --from-env-file=.env.tmp
+            kubectl create configmap env-${CIRCLE_BRANCH} --from-env-file=/tmp/workspace/images/.env.tmp
             kubectl apply -f kubernetes
 
   packer_validate:
